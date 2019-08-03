@@ -1,0 +1,75 @@
+# Rough command structure:
+mdb tag get <hostname> <tag>         -- get value of tag from hostname
+mdb tag list <hostname>              -- list tags attached to hostname
+mdb tag find <tag>[=<value>]         -- find hosts with tag (or with tag=value)
+mdb tag set <hostname> <tag> <value> -- set a value for tag on host
+mdb tag delete <hostname> <tag>      -- delete tag from host
+mdb tag edit <hostname> <tag>        -- edit tag on host in text editor
+
+mdb endpoint create <hostname>
+mdb endpoint delete <hostname>
+
+
+# Rough 'filesystem' layout:
+  /mdb/endpoints/
+     ./hostname.example.com/
+        ./tags/
+           ./tagname1 ./tagname2 ./tagname3
+
+
+# To build (this will get better):
+$ brew install etcd
+$ brew services start etcd
+$ go get github.com/spf13/cobra github.com/coreos/etcd/client github.com/ \
+  mitchellh/go-homedir github.com/spf13/viper github.com/coreos/etcd/error
+$ go build
+
+
+# quick demo:
+# setup (add build directory to your path, then cut&paste): 
+mdb endpoint create db01.example.com
+mdb endpoint create db02.example.com
+mdb endpoint create db03.example.com
+
+mdb tag set db01.example.com role db
+mdb tag set db01.example.com shard 1
+mdb tag set db01.example.com dbrole master
+
+mdb tag set db02.example.com role db
+mdb tag set db02.example.com shard 1
+mdb tag set db02.example.com dbrole slave
+mdb tag set db02.example.com dbmaster db01.example.com
+
+mdb tag set db03.example.com role db
+mdb tag set db03.example.com shard 1
+mdb tag set db03.example.com dbrole slave
+mdb tag set db03.example.com dbmaster db01.example.com
+
+
+# get info (command + output):
+
+# list all my hosts
+$ mdb endpoints list
+db03.example.com
+db01.example.com
+db02.example.com
+
+# show the tags for a host
+$ mdb tags list db01.example.com
+dbrole
+role
+shard
+
+# What shard is this host in?
+$ mdb tags get db01.example.com shard
+1
+
+# What hosts are slaves of db01?
+$ mdb tags find dbmaster=db01.example.com
+db02.example.com
+db03.example.com
+
+# What is the master of shard 1?
+# Doesn't work yet! Pretend.
+$ mdb tags find dbrole=master,&shard=1
+db01.example.com
